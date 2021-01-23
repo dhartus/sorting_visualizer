@@ -3,7 +3,7 @@ import random
 
 WIDTH = 800
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
-pygame.display.set_caption("Bubble Sort Visualizer")
+pygame.display.set_caption("Sort Visualizer")
 WIDTHOFBAR = 1 / 100 * WIDTH
 xpos = (5 / 100) * WIDTH
 ypos = (5 / 100) * WIDTH
@@ -21,9 +21,7 @@ TEXT2_YPOS = TEXT1_YPOS + TEXT_GAP
 TEXT3_YPOS = TEXT2_YPOS + TEXT_GAP
 TEXT4_YPOS = TEXT3_YPOS + TEXT_GAP
 
-
-
-# Colours
+#  Colours
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 255, 0)
@@ -46,17 +44,52 @@ class Bar:
         self.width = width
         self.height = height
 
-    def issorted(self):
+    def final(self):
         self.colour = PURPLE
 
     def checking(self):
         self.colour = RED
 
+    def sorted(self):
+        self.colour = GREEN
+
     def checked(self):
         self.colour = TURQUOISE
 
 
-def bubblesort(win, bars):
+def insertionsort(win, bars: Bar):
+    for i in range(1, len(bars)):
+        j = i
+        while j > 0:
+
+            bars[j].checking()
+            bars[j-1].checking()
+            draw_bars(win, bars)
+
+            if bars[j].height < bars[j-1].height:
+                bars[j].height, bars[j-1].height = bars[j-1].height, bars[j].height
+
+                bars[j].sorted()
+                bars[j-1].sorted()
+                draw_bars(win, bars)
+                j -= 1
+
+            else:
+                bars[j].sorted()
+                bars[j-1].sorted()
+                draw_bars(win,bars)
+                break
+
+        #  If i == len(bars)-1 , all bars have been sorted , change color of all bars to final color.
+        if i == len(bars)-1:
+            j = i
+            while j >= 0:
+                bars[j].final()
+                draw_bars(win, bars)
+                j -= 1
+
+
+def bubblesort(win, bars:Bar):
     for i in range(len(bars)):
         for j in range(0, len(bars) - 1 - i):
 
@@ -78,9 +111,68 @@ def bubblesort(win, bars):
             secondbar.checked()
             draw_bars(win, bars)
 
-        bars[len(bars) - 1 - i].issorted()
+        bars[len(bars) - 1 - i].final()
         draw_bars(win, bars)
 
+def mergesort(win, array):
+    helper = []
+    for bar in array:
+        helper.append(bar.height)
+    mergesorthelper(array, helper, 0, len(array)-1, win)
+    return
+
+
+def mergesorthelper(array, helper, startIdx, endIdx, win):
+    if startIdx == endIdx:
+        return
+
+    mid = (startIdx + endIdx) // 2
+
+    mergesorthelper(array, helper, startIdx, mid, win)
+    mergesorthelper(array, helper, mid + 1, endIdx, win)
+    doMerge(array, helper, startIdx, mid, endIdx, win)
+
+
+def doMerge(array, helper, startIdx, mid, endIdx, win):
+
+    for i in range(startIdx, endIdx + 1):
+        helper[i] = array[i].height
+
+    leftpointer = startIdx
+    rightpointer = mid + 1
+
+    current = startIdx
+    array[leftpointer].checking()
+    array[rightpointer].checking()
+    draw_bars(win, array)
+    while leftpointer <= mid and rightpointer <= endIdx:
+
+        if helper[leftpointer] <= helper[rightpointer]:
+            array[current].height = helper[leftpointer]
+            array[current].final() if (startIdx == 0 and endIdx == len(array)-1) else array[current].sorted()
+            draw_bars(win, array)
+            leftpointer += 1
+        else:
+            array[current].height = helper[rightpointer]
+            array[current].final() if (startIdx == 0 and endIdx == len(array)-1) else array[current].sorted()
+            draw_bars(win, array)
+            rightpointer += 1
+
+        current += 1
+
+    while leftpointer <= mid:
+        array[current].height = helper[leftpointer]
+        array[current].final() if (startIdx == 0 and endIdx == len(array)-1) else array[current].sorted()
+        draw_bars(win, array)
+        leftpointer += 1
+        current += 1
+
+    while rightpointer <= endIdx:
+        array[current].height = helper[rightpointer]
+        array[current].final() if (startIdx == 0 and endIdx == len(array)-1) else array[current].sorted()
+        draw_bars(win, array)
+        rightpointer += 1
+        current += 1
 
 def draw_bars(win, bars, *args):
     for event in pygame.event.get():
@@ -90,9 +182,12 @@ def draw_bars(win, bars, *args):
             global ANIMATIONSPEED
             if event.key == pygame.K_UP:
                 ANIMATIONSPEED += 50
+                print(ANIMATIONSPEED)
 
             if event.key == pygame.K_DOWN:
-                ANIMATIONSPEED -= 50
+                if ANIMATIONSPEED - 50 >=0:
+                    ANIMATIONSPEED -= 50
+                print(ANIMATIONSPEED)
 
     win.fill(WHITE)
     for bar in bars:
@@ -135,7 +230,7 @@ def draw_text(win):
 def main(win):
     pygame.init()
     bars = generateRandomBars()
-
+    sorting_algorithm = None
     sorted = False
     while True:
 
@@ -145,14 +240,29 @@ def main(win):
             if event.type == pygame.QUIT:
                 pygame.quit()
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_b:
+                    sorting_algorithm = "bubblesort"
+                if event.key == pygame.K_i:
+                    sorting_algorithm = "insertionsort"
+                if event.key == pygame.K_m:
+                    print("m")
+                    sorting_algorithm = "mergesort"
+
             if pygame.mouse.get_pressed()[0] or pygame.mouse.get_pressed()[2]:  # Left or Right mouse click
                 bars = generateRandomBars()  # Generate new Random bars
                 sorted = False
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not sorted:  # If Space key is pressed
-                    bubblesort(win, bars)  # Sort the bars
-                    sorted = True
+                    if sorting_algorithm is not None:
+                        if sorting_algorithm == "bubblesort":
+                            bubblesort(win, bars)
+                        elif sorting_algorithm == "insertionsort":
+                            insertionsort(win, bars)
+                        elif sorting_algorithm == "mergesort":
+                            mergesort(win, bars)
+                        sorted = True
 
             if event.type == pygame.KEYDOWN:
                 global WIDTHOFBAR
@@ -167,6 +277,8 @@ def main(win):
                         WIDTHOFBAR += 5
                         bars = generateRandomBars()
                         sorted = False
+
+
 
 
 
